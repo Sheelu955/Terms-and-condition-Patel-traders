@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Unified Legal Gateway | Patel Traders</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800;900&display=swap');
+        :root { --legal-red: #f43f5e; --safe-green: #10b981; --bg-superdark: #03050a; --bhagwa: #ff9933; }
+        
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg-superdark); color: #ffffff; margin: 0; overflow-x: hidden; }
+        
+        .bg-aurora { position: fixed; inset: 0; z-index: -2; background: var(--bg-superdark); overflow: hidden; }
+        .bg-aurora::after { content: ''; position: absolute; inset: 0; background-image: linear-gradient(rgba(255, 153, 51, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 153, 51, 0.03) 1px, transparent 1px); background-size: 40px 40px; opacity: 0.5; z-index: -1; }
+        
+        .glass-card { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(25px); border: 1px solid rgba(255, 153, 51, 0.15); border-radius: 24px; box-shadow: inset 0 0 20px rgba(255,255,255,0.02), 0 10px 30px rgba(0,0,0,0.5); }
+        
+        .policy-tab { width: 100%; text-align: left; padding: 14px 18px; border-radius: 12px; font-weight: 800; text-transform: uppercase; font-size: 11px; letter-spacing: 1px; transition: all 0.3s; border: 1px solid transparent; color: #94a3b8; background: rgba(255,255,255,0.02); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .policy-tab:hover { background: rgba(255,255,255,0.05); color: white; }
+        
+        .tab-active-red { background: linear-gradient(135deg, rgba(244, 63, 94, 0.15), rgba(190, 18, 60, 0.2)) !important; color: var(--legal-red) !important; border-color: rgba(244, 63, 94, 0.3) !important; box-shadow: inset 4px 0 0 var(--legal-red); }
+        .tab-active-green { background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(5, 150, 105, 0.2)) !important; color: var(--safe-green) !important; border-color: rgba(16, 185, 129, 0.3) !important; box-shadow: inset 4px 0 0 var(--safe-green); }
+
+        .btn-bhagwa { background: linear-gradient(135deg, var(--bhagwa), #cc5500); color: white; font-weight: 900; text-transform: uppercase; border-radius: 12px; padding: 16px; cursor: pointer; border: none; box-shadow: 0 10px 30px rgba(255, 153, 51, 0.3); transition: all 0.3s; width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .btn-bhagwa:hover { box-shadow: 0 15px 40px rgba(255, 153, 51, 0.5); transform: translateY(-2px); }
+        .btn-disabled { background: #334155 !important; box-shadow: none !important; color: #94a3b8 !important; cursor: not-allowed !important; transform: none !important; }
+
+        .policy-content-area { display: none; animation: fadeIn 0.3s ease-out; }
+        .content-active { display: block; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .box-red { background: rgba(244, 63, 94, 0.1); border-left: 4px solid #f43f5e; padding: 20px; border-radius: 16px; box-shadow: 0 5px 20px rgba(244, 63, 94, 0.05); }
+        .box-green { background: rgba(16, 185, 129, 0.1); border-left: 4px solid #10b981; padding: 20px; border-radius: 16px; box-shadow: 0 5px 20px rgba(16, 185, 129, 0.05); }
+
+        .loader { border: 3px solid rgba(255, 153, 51, 0.2); border-top: 3px solid #ffffff; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: none; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .lang-btn { padding: 6px 14px; border-radius: 8px; font-weight: bold; font-size: 12px; transition: 0.3s; cursor: pointer; border: none; }
+        .lang-active { background: var(--bhagwa); color: white; box-shadow: 0 4px 15px rgba(255,153,51,0.4); }
+        .lang-inactive { background: rgba(255,255,255,0.1); color: #94a3b8; }
+        .lang-inactive:hover { background: rgba(255,255,255,0.2); color: white; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+<div class="bg-aurora"></div>
+
+<div class="max-w-7xl mx-auto relative z-10">
+    
+    <div class="flex justify-end mb-4">
+        <div class="bg-black/50 p-1 rounded-xl border border-white/10 flex gap-1">
+            <button id="btn-hi" onclick="setLang('hi')" class="lang-btn lang-inactive">हिन्दी</button>
+            <button id="btn-en" onclick="setLang('en')" class="lang-btn lang-active">English</button>
+        </div>
+    </div>
+
+    <div class="flex flex-col md:flex-row items-center justify-between mb-8 pb-6 border-b border-white/10 gap-6">
+        <div class="flex items-center gap-4">
+            <img id="biz-logo" src="https://i.ibb.co/wrSrs7K5/IMG-20260218-WA0001.jpg" alt="Logo" crossorigin="anonymous" class="w-16 h-16 rounded-2xl border-2 border-[#ff9933]/60 shadow-[0_0_30px_rgba(255,153,51,0.3)]">
+            <div>
+                <h1 id="head-title" class="text-2xl md:text-3xl font-black text-white uppercase italic tracking-tighter">Unified Gateway</h1>
+                <h4 id="head-sub" class="text-[#ff9933] font-black uppercase tracking-[3px] text-[10px] mt-1">Patel Traders Corporate Policies</h4>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex flex-col lg:flex-row gap-8">
+        
+        <div class="w-full lg:w-1/4">
+            <div class="glass-card p-4 sticky top-8">
+                <p id="lbl-legal" class="text-[10px] text-white/50 font-bold uppercase tracking-widest mb-4 px-2">Strict Legal</p>
+                <button onclick="showPolicy('terms', 'red')" id="tab-terms" class="policy-tab tab-active-red"><span class="text-lg">⚠️</span> <span id="txt-tab-terms">Terms & Conditions</span></button>
+                
+                <p id="lbl-gen" class="text-[10px] text-white/50 font-bold uppercase tracking-widest mb-4 mt-6 px-2">General Policies</p>
+                <button onclick="showPolicy('refund', 'green')" id="tab-refund" class="policy-tab"><span class="text-lg">💸</span> <span id="txt-tab-refund">Cancellation & Refund</span></button>
+                <button onclick="showPolicy('delivery', 'green')" id="tab-delivery" class="policy-tab"><span class="text-lg">🚚</span> <span id="txt-tab-del">Delivery & Risk</span></button>
+                
+                <p id="lbl-data" class="text-[10px] text-white/50 font-bold uppercase tracking-widest mb-4 mt-6 px-2">Data & Security</p>
+                <button onclick="showPolicy('privacy', 'green')" id="tab-privacy" class="policy-tab"><span class="text-lg">🛡️</span> <span id="txt-tab-priv">Privacy Policy</span></button>
+                
+                <p id="lbl-corp" class="text-[10px] text-white/50 font-bold uppercase tracking-widest mb-4 mt-6 px-2">Corporate</p>
+                <button onclick="showPolicy('owner', 'green')" id="tab-owner" class="policy-tab"><span class="text-lg">🏢</span> <span id="txt-tab-own">Owner Info</span></button>
+            </div>
+        </div>
+
+        <div class="w-full lg:w-3/4 flex flex-col">
+            <div id="render-area" class="glass-card p-6 md:p-10 shadow-2xl flex-grow bg-[rgba(10,15,24,0.8)]">
+                
+                <div id="content-en">
+                    <div id="policy-terms" class="policy-content-area content-active">
+                        <h2 class="text-3xl font-black text-rose-500 uppercase mb-8 border-b border-rose-500/20 pb-4">Terms & Conditions</h2>
+                        <div class="space-y-5 text-rose-100/90 text-sm font-bold leading-relaxed">
+                            <div class="box-red"><p><span class="text-white font-black text-base">NO WARRANTY (AS-IS SALES):</span> Patel Traders strictly operates on an 'AS-IS' basis. We explicitly disclaim any warranties on wooden furniture, plastics, glass, or metals. We hold ZERO liability for damages post-sale.</p></div>
+                            <div class="box-red"><p><span class="text-white font-black text-base">PENDING DUES (CREDIT):</span> Any amount marked as 'DUE' must be cleared within the agreed timeframe to avoid suspension of vault access and legal recovery.</p></div>
+                            <div class="box-red"><p><span class="text-white font-black text-base">LEGAL JURISDICTION:</span> Governed exclusively by Indian law, subject to the jurisdiction of the courts in <b>Kannauj, Uttar Pradesh</b> only.</p></div>
+                        </div>
+                    </div>
+
+                    <div id="policy-refund" class="policy-content-area">
+                        <h2 class="text-3xl font-black text-emerald-500 uppercase mb-8 border-b border-emerald-500/20 pb-4">Cancellation & Refund</h2>
+                        <div class="space-y-5 text-emerald-100/90 text-sm font-bold leading-relaxed">
+                            <div class="box-green"><p><span class="text-white font-black text-base">STRICT NO REFUND POLICY:</span> Any payments made—whether advance booking, full payment, or clearance of pending dues—are strictly non-refundable.</p></div>
+                            <div class="box-green"><p><span class="text-white font-black text-base">NO RETURN, NO EXCHANGE:</span> Once the invoice is generated and goods leave the shop, the sale is deemed final.</p></div>
+                        </div>
+                    </div>
+
+                    <div id="policy-delivery" class="policy-content-area">
+                        <h2 class="text-3xl font-black text-emerald-500 uppercase mb-8 border-b border-emerald-500/20 pb-4">Delivery & Risk</h2>
+                        <div class="box-green text-emerald-100/90 text-sm font-bold leading-relaxed"><p><span class="text-white font-black text-base">TRANSFER OF RISK:</span> The entire risk of loss, damage, theft, or destruction transfers entirely to the Customer the exact moment goods are loaded onto the delivery vehicle at our shop.</p></div>
+                    </div>
+
+                    <div id="policy-privacy" class="policy-content-area">
+                        <h2 class="text-3xl font-black text-emerald-500 uppercase mb-8 border-b border-emerald-500/20 pb-4">Privacy Policy</h2>
+                        <div class="box-green text-emerald-100/90 text-sm font-bold leading-relaxed"><p><span class="text-white font-black text-base">ZERO DATA SELLING:</span> Patel Traders explicitly DOES NOT sell, rent, or distribute your personal data to any third-party marketing agencies. All records are Cloud Encrypted.</p></div>
+                    </div>
+
+                    <div id="policy-owner" class="policy-content-area">
+                        <h2 class="text-3xl font-black text-emerald-500 uppercase mb-8 border-b border-emerald-500/20 pb-4">Owner Info</h2>
+                        <div class="box-green text-emerald-100/90 text-sm font-bold leading-relaxed"><p><span class="text-white font-black text-base">AUTHORIZED PROPRIETOR:</span> Sanjay Kumar Patel. Patel Traders operates as an unregistered independent retail business in Talgram, Kannauj.</p></div>
+                    </div>
+                </div>
+
+                <div id="content-hi" style="display: none;">
+                    <div id="policy-terms-hi" class="policy-content-area content-active">
+                        <h2 class="text-3xl font-black text-rose-500 uppercase mb-8 border-b border-rose-500/20 pb-4">नियम व शर्तें</h2>
+                        <div class="space-y-5 text-rose-100/90 text-sm font-bold leading-relaxed">
+                            <div class="box-red"><p><span class="text-white font-black text-base">कोई गारंटी नहीं (AS-IS SALES):</span> पटेल ट्रेडर्स का सामान 'जैसा है' (As-Is) बेचा जाता है। लकड़ी, प्लास्टिक या शीशे पर कोई वारंटी नहीं है। दुकान से माल निकलने के बाद हमारी कोई ज़िम्मेदारी नहीं होगी।</p></div>
+                            <div class="box-red"><p><span class="text-white font-black text-base">उधारी (PENDING DUES):</span> 'DUE' (उधार) को तय समय सीमा में चुकाना अनिवार्य है, अन्यथा क़ानूनी कार्रवाई की जाएगी और वॉल्ट ब्लॉक कर दिया जाएगा।</p></div>
+                            <div class="box-red"><p><span class="text-white font-black text-base">कानूनी अधिकार क्षेत्र:</span> सभी क़ानूनी विवाद केवल <b>कन्नौज, उत्तर प्रदेश</b> के न्यायालयों के अधीन ही सुने जाएंगे।</p></div>
+                        </div>
+                    </div>
+
+                    <div id="policy-refund-hi" class="policy-content-area">
+                        <h2 class="text-3xl font-black text-emerald-500 uppercase mb-8 border-b border-emerald-500/20 pb-4">रद्दीकरण और रिफंड</h2>
+                        <div class="space-y-5 text-emerald-100/90 text-sm font-bold leading-relaxed">
+                            <div class="box-green"><p><span class="text-white font-black text-base">नो रिफंड पॉलिसी:</span> किया गया कोई भी भुगतान (एडवांस या पूरा पेमेंट) किसी भी परिस्थिति में वापस (Refund) नहीं किया जाएगा।</p></div>
+                            <div class="box-green"><p><span class="text-white font-black text-base">वापसी या बदलाव नहीं:</span> रसीद कटने और माल दुकान से निकलने के बाद कोई वापसी या अदला-बदली नहीं होगी।</p></div>
+                        </div>
+                    </div>
+
+                    <div id="policy-delivery-hi" class="policy-content-area">
+                        <h2 class="text-3xl font-black text-emerald-500 uppercase mb-8 border-b border-emerald-500/20 pb-4">डिलीवरी और जोखिम</h2>
+                        <div class="box-green text-emerald-100/90 text-sm font-bold leading-relaxed"><p><span class="text-white font-black text-base">जोखिम का हस्तांतरण:</span> सामान ट्रांसपोर्ट या रिक्शे पर लोड होने के बाद रास्ते की किसी भी टूट-फूट या नुकसान की पूरी ज़िम्मेदारी केवल ग्राहक (Customer) की होगी।</p></div>
+                    </div>
+
+                    <div id="policy-privacy-hi" class="policy-content-area">
+                        <h2 class="text-3xl font-black text-emerald-500 uppercase mb-8 border-b border-emerald-500/20 pb-4">गोपनीयता नीति (Privacy Policy)</h2>
+                        <div class="box-green text-emerald-100/90 text-sm font-bold leading-relaxed"><p><span class="text-white font-black text-base">डेटा सुरक्षित है:</span> पटेल ट्रेडर्स आपका डेटा किसी भी थर्ड-पार्टी कंपनी को नहीं बेचता। आपके सभी डिजिटल रिकॉर्ड हमारे एन्क्रिप्टेड क्लाउड सर्वर पर सुरक्षित हैं।</p></div>
+                    </div>
+
+                    <div id="policy-owner-hi" class="policy-content-area">
+                        <h2 class="text-3xl font-black text-emerald-500 uppercase mb-8 border-b border-emerald-500/20 pb-4">मालिक की जानकारी</h2>
+                        <div class="box-green text-emerald-100/90 text-sm font-bold leading-relaxed"><p><span class="text-white font-black text-base">अधिकृत मालिक:</span> संजय कुमार पटेल। पटेल ट्रेडर्स तालग्राम, कन्नौज में एक अनरजिस्टर्ड स्वतंत्र रिटेल व्यापार है।</p></div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="mt-6 glass-card p-6 border-t-4 border-[#ff9933] bg-[#0a0f18]">
+                <h3 id="txt-req-title" class="text-white font-black uppercase tracking-widest text-lg mb-2">Request Official Document</h3>
+                <p id="txt-req-sub" class="text-white/50 text-xs font-bold mb-6">A 12-page Master Legal PDF will be securely emailed to you for digital signing and vault access.</p>
+                
+                <div id="welcome-msg" class="hidden mb-4 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold text-sm"></div>
+
+                <div class="flex flex-col md:flex-row gap-4 mb-4">
+                    <input type="text" id="custName" placeholder="Enter Full Name" class="w-full md:w-1/2 bg-black/50 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-[#ff9933] transition font-bold placeholder-white/30">
+                    <input type="email" id="custEmail" placeholder="Enter Email Address" onblur="checkCustomerExistence()" class="w-full md:w-1/2 bg-black/50 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-[#ff9933] transition font-bold placeholder-white/30">
+                </div>
+
+                <div class="flex items-start gap-4 mb-6 p-4 bg-black/40 rounded-xl border border-white/5">
+                    <input type="checkbox" id="acceptMaster" class="mt-1 w-6 h-6 accent-[#ff9933] cursor-pointer" onchange="toggleAccept()">
+                    <label id="lbl-check" for="acceptMaster" class="text-sm font-bold text-white/80 cursor-pointer select-none">
+                        I acknowledge that I have read the policies and request the official 12-page PDF agreement to my email.
+                    </label>
+                </div>
+
+                <button id="btnFinalProceed" class="btn-bhagwa btn-disabled tracking-[2px]" disabled onclick="executeLegalEngine()">
+                    <span id="btn-text">Email Legal Document →</span>
+                    <div id="btn-loader" class="loader"></div>
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwGQleE1Mpq8ndheHZtM5wKt9DICVXI84vavz0W9We7rXCrURqP4crAV94EU5QilYfq/exec";
+    let currentLang = 'en';
+    let currentTab = 'terms'; // Default tab
+
+    function setLang(lang) {
+        currentLang = lang;
+        if(lang === 'hi') {
+            document.getElementById('btn-hi').className = "lang-btn lang-active";
+            document.getElementById('btn-en').className = "lang-btn lang-inactive";
+            document.getElementById('content-hi').style.display = "block";
+            document.getElementById('content-en').style.display = "none";
+            
+            // Translations
+            document.getElementById('head-title').innerText = "यूनिफाइड गेटवे";
+            document.getElementById('head-sub').innerText = "पटेल ट्रेडर्स कॉपोरेट पॉलिसी";
+            document.getElementById('txt-tab-terms').innerText = "नियम व शर्तें";
+            document.getElementById('txt-tab-refund').innerText = "रिफंड पॉलिसी";
+            document.getElementById('txt-tab-del').innerText = "डिलीवरी जोखिम";
+            document.getElementById('txt-tab-priv').innerText = "गोपनीयता नीति";
+            document.getElementById('txt-tab-own').innerText = "मालिक की जानकारी";
+            
+            document.getElementById('txt-req-title').innerText = "आधिकारिक दस्तावेज़ प्राप्त करें";
+            document.getElementById('txt-req-sub').innerText = "12 पेज की क़ानूनी PDF आपके ईमेल पर सुरक्षित रूप से भेजी जाएगी।";
+            document.getElementById('custName').placeholder = "पूरा नाम दर्ज करें";
+            document.getElementById('custEmail').placeholder = "ईमेल आईडी दर्ज करें";
+            document.getElementById('lbl-check').innerText = "मैंने सभी नीतियां पढ़ ली हैं और मुझे ईमेल पर 12-पेज की PDF रसीद चाहिए।";
+            if(document.getElementById('btn-text').innerText.includes("Email") || document.getElementById('btn-text').innerText.includes("ईमेल")) {
+                 document.getElementById('btn-text').innerText = "दस्तावेज़ ईमेल करें →";
+            }
+        } else {
+            document.getElementById('btn-hi').className = "lang-btn lang-inactive";
+            document.getElementById('btn-en').className = "lang-btn lang-active";
+            document.getElementById('content-hi').style.display = "none";
+            document.getElementById('content-en').style.display = "block";
+            
+            // Translations
+            document.getElementById('head-title').innerText = "Unified Gateway";
+            document.getElementById('head-sub').innerText = "Patel Traders Corporate Policies";
+            document.getElementById('txt-tab-terms').innerText = "Terms & Conditions";
+            document.getElementById('txt-tab-refund').innerText = "Cancellation & Refund";
+            document.getElementById('txt-tab-del').innerText = "Delivery & Risk";
+            document.getElementById('txt-tab-priv').innerText = "Privacy Policy";
+            document.getElementById('txt-tab-own').innerText = "Owner Info";
+            
+            document.getElementById('txt-req-title').innerText = "Request Official Document";
+            document.getElementById('txt-req-sub').innerText = "A 12-page Master Legal PDF will be securely emailed to you for digital signing and vault access.";
+            document.getElementById('custName').placeholder = "Enter Full Name";
+            document.getElementById('custEmail').placeholder = "Enter Email Address";
+            document.getElementById('lbl-check').innerText = "I acknowledge that I have read the policies and request the official 12-page PDF agreement to my email.";
+            if(document.getElementById('btn-text').innerText.includes("दस्तावेज़") || document.getElementById('btn-text').innerText.includes("Email")) {
+                 document.getElementById('btn-text').innerText = "Email Legal Document →";
+            }
+        }
+        // Refresh the active tab view to match language
+        showPolicy(currentTab, currentTab === 'terms' ? 'red' : 'green');
+    }
+
+    function showPolicy(policyId, colorTheme) {
+        currentTab = policyId; // Store active tab
+        document.querySelectorAll('.policy-content-area').forEach(el => el.classList.remove('content-active'));
+        document.querySelectorAll('.policy-tab').forEach(el => {
+            el.classList.remove('tab-active-red');
+            el.classList.remove('tab-active-green');
+        });
+        
+        // Show correct language div
+        let targetId = currentLang === 'hi' ? `policy-${policyId}-hi` : `policy-${policyId}`;
+        document.getElementById(targetId).classList.add('content-active');
+        
+        if(colorTheme === 'red') {
+            document.getElementById(`tab-${policyId}`).classList.add('tab-active-red');
+        } else {
+            document.getElementById(`tab-${policyId}`).classList.add('tab-active-green');
+        }
+    }
+
+    function toggleAccept() {
+        const checkbox = document.getElementById('acceptMaster');
+        const btn = document.getElementById('btnFinalProceed');
+        const name = document.getElementById('custName').value.trim();
+        const email = document.getElementById('custEmail').value.trim();
+        
+        if (checkbox.checked && name !== "" && email !== "") {
+            btn.disabled = false;
+            btn.classList.remove('btn-disabled');
+        } else {
+            btn.disabled = true;
+            btn.classList.add('btn-disabled');
+        }
+    }
+
+    async function checkCustomerExistence() {
+        const email = document.getElementById('custEmail').value.trim();
+        if(!email || !email.includes('@')) return;
+
+        try {
+            const response = await fetch(APPS_SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify({ type: "CHECK_CUSTOMER", email: email })
+            });
+            const result = await response.json();
+            
+            if(result.status === "EXISTS") {
+                const msgBox = document.getElementById('welcome-msg');
+                msgBox.innerHTML = `🌟 ${result.message}`; 
+                msgBox.classList.remove('hidden');
+                document.getElementById('custName').value = result.name; 
+                document.getElementById('btn-text').innerText = currentLang === 'hi' ? "नियम पुनः भेजें 🔄" : "Send Terms Again 🔄";
+            }
+        } catch (error) {
+            console.error("Database Check Failed", error);
+        }
+    }
+
+    // 🚀 THE MAIN ENGINE
+    async function executeLegalEngine() {
+        const name = document.getElementById('custName').value.trim();
+        const email = document.getElementById('custEmail').value.trim();
+        
+        const btn = document.getElementById('btnFinalProceed');
+        const btnText = document.getElementById('btn-text');
+        const loader = document.getElementById('btn-loader');
+        
+        btn.disabled = true;
+        btnText.innerText = currentLang === 'hi' ? "PDF बन रही है..." : "Generating PDF...";
+        loader.style.display = "block";
+
+        try {
+            const base64PDF = await generateBackgroundPDF(name);
+            btnText.innerText = currentLang === 'hi' ? "ईमेल भेजा जा रहा है..." : "Dispatching Email...";
+            
+            const response = await fetch(APPS_SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify({ type: "SEND_LEGAL_PDF", name: name, email: email, pdfData: base64PDF })
+            });
+            
+            const result = await response.json();
+
+            if (result.status === "SUCCESS") {
+                btnText.innerText = currentLang === 'hi' ? "ईमेल सफलतापूर्वक भेजा गया! ✅" : "Email Sent Successfully! ✅";
+                loader.style.display = "none";
+                btn.style.background = "#10b981"; 
+                btn.style.boxShadow = "0 10px 30px rgba(16, 185, 129, 0.4)";
+                alert(currentLang === 'hi' ? `सफलता! दस्तावेज़ ${email} पर भेज दिया गया है।` : `Success! The legal document has been emailed to ${email}.`);
+            } else {
+                throw new Error(result.message || result.error);
+            }
+        } catch (error) {
+            alert("Error: " + error.message);
+            btnText.innerText = currentLang === 'hi' ? "विफल। पुनः प्रयास करें" : "Failed. Try Again";
+            loader.style.display = "none";
+            btn.disabled = false;
+        }
+    }
+
+    // 📄 PDF GENERATION LOGIC (Fixed Overlapping Logo & Text)
+    async function generateBackgroundPDF(customerName) {
+        return new Promise((resolve) => {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const margin = 20, pageWidth = 210, pageHeight = 297, maxWidth = pageWidth - margin * 2;
+            let currentPage = 1;
+
+            const imgElement = document.getElementById('biz-logo');
+            const canvasLogo = document.createElement('canvas');
+            canvasLogo.width = imgElement.naturalWidth || 150;
+            canvasLogo.height = imgElement.naturalHeight || 150;
+            const ctx = canvasLogo.getContext('2d');
+            ctx.drawImage(imgElement, 0, 0, canvasLogo.width, canvasLogo.height);
+            const logoBase64 = canvasLogo.toDataURL('image/jpeg');
+
+            function addHeader(title) {
+                // Header Background
+                doc.setFillColor(244, 63, 94); 
+                doc.rect(0, 0, pageWidth, 35, 'F');
+                
+                // Logo placement (X=15, Y=5, Width=25, Height=25)
+                doc.addImage(logoBase64, 'JPEG', 15, 5, 25, 25);
+                
+                // Shifted text to the right (X=45) and aligned Left to avoid logo overlap
+                doc.setTextColor(255, 255, 255); 
+                doc.setFontSize(18); // Slightly smaller font to fit nicely
+                doc.setFont("helvetica", "bold");
+                doc.text("PATEL TRADERS - MASTER LEGAL AGREEMENT", 45, 16, { align: "left" });
+                
+                doc.setFontSize(10); 
+                doc.setFont("helvetica", "normal");
+                doc.text("OFFICIAL DOCUMENTATION | KANNAUJ JURISDICTION", 45, 24, { align: "left" });
+                
+                // Title of the specific section below the header
+                doc.setTextColor(244, 63, 94); 
+                doc.setFontSize(16); 
+                doc.setFont("helvetica", "bold");
+                doc.text(title, margin, 48);
+                
+                // Red underline
+                doc.setDrawColor(244, 63, 94); 
+                doc.setLineWidth(1); 
+                doc.line(margin, 52, pageWidth - margin, 52);
+            }
+
+            function addFooter() {
+                doc.setFontSize(9); doc.setTextColor(150, 150, 150); doc.setFont("helvetica", "normal");
+                doc.text(`Page ${currentPage} of 12 | Authenticated Record for ${customerName.toUpperCase()} | Patel Traders`, pageWidth/2, pageHeight - 15, { align: "center" });
+                currentPage++;
+            }
+
+            // Standard English Legal Text for PDF
+            const pagesData = [
+                { title: "1. INTRODUCTION & DEFINITIONS", text: "1.1 APPLICABILITY OF TERMS: This Master Legal Agreement constitutes a legally binding contract between Patel Traders, an unregistered proprietary retail business, and the Customer (" + customerName + ").\n\n1.2 SCOPE OF DOCUMENT: By accessing the Digital Vault, accepting an invoice, or taking physical delivery of any product, the Customer unconditionally consents to be bound by these terms.\n\n1.3 ELECTRONIC RECORD COMPLIANCE: In strict accordance with the Information Technology Act, 2000 (India), this electronic record is generated by a computer system and functions as a valid digital contract." },
+                { title: "2. EXPLICIT NO WARRANTY POLICY", text: "2.1 AS-IS SALES DOCTRINE: Patel Traders strictly operates on an 'AS-IS' and 'WITH ALL FAULTS' basis. We explicitly disclaim any and all warranties, guarantees, or assurances.\n\n2.2 ZERO LIABILITY POST-SALE: The absolute moment a product is physically handed over to the customer, Patel Traders is completely absolved of any liability for damages, scratches, or breakage." },
+                { title: "3. PRICING & PAYMENT CLEARANCE", text: "3.1 CURRENCY AND QUOTATIONS: All prices quoted and billed are exclusively in Indian Rupees (INR).\n\n3.2 ONLINE PAYMENT INFRASTRUCTURE: We utilize secure payment gateways. Patel Traders acts solely as a merchant and is entirely exempt from liability regarding bank downtime.\n\n3.3 ADVANCE BOOKING PAYMENTS: Any advance payments are strictly non-refundable." },
+                { title: "4. PENDING DUES & CREDIT DEFAULT", text: "4.1 CREDIT OBLIGATIONS: Customers marked as 'DUE' must clear their outstanding balances strictly within the mutually agreed timeframe.\n\n4.2 ESCALATED LEGAL RECOVERY: Patel Traders reserves the absolute right to initiate aggressive legal debt recovery proceedings against the defaulting customer, including civil suits." },
+                { title: "5. STRICT NO REFUND & CANCELLATION", text: "5.1 FINALITY OF COMMERCIAL SALE: Patel Traders maintains an unwavering 'NO RETURN, NO EXCHANGE, NO REFUND' policy.\n\n5.2 MANDATORY PRE-PURCHASE INSPECTION: The burden of inspection lies entirely upon the Customer before completing the purchase." },
+                { title: "6. DELIVERY LIABILITY RISK TRANSFER", text: "6.1 IMMEDIATE TRANSFER OF RISK: The entire risk of loss, damage, theft, or destruction transfers entirely to the Customer the exact moment goods are loaded onto the delivery vehicle at our shop.\n\n6.2 THIRD-PARTY DAMAGE IMMUNITY: We bear zero financial liability for damages resulting from reckless driving or bad roads." },
+                { title: "7. PRIVACY & DATA COLLECTION POLICY", text: "7.1 DATA WE COLLECT: We collect only essential KYC data. \n\n7.2 ZERO DATA SELLING DOCTRINE: Patel Traders explicitly DOES NOT sell, rent, lease, or distribute your personal data to any third-party marketing agencies." },
+                { title: "8. DIGITAL VAULT SECURITY", text: "8.1 CLOUD ENCRYPTION: All digital records are stored securely on high-grade encrypted cloud architecture.\n\n8.2 NO FINANCIAL DATA STORAGE: We do NOT store your credit card numbers or UPI PINs." },
+                { title: "9. ANTI-FRAUD & CYBER CRIME", text: "9.1 ZERO TOLERANCE FOR DIGITAL FORGERY: Any unauthorized digital manipulation (utilizing Photoshop, PDF editors, etc.) of receipts to falsely claim a 'PAID' status constitutes a severe criminal offense.\n\n9.2 CLOUD DATABASE SUPREMACY: The encrypted data recorded securely within the Patel Traders Cloud Master Database shall be considered the ultimate source of truth." },
+                { title: "10. LIMITATION OF LIABILITY", text: "10.1 MAXIMUM AGGREGATE LIABILITY: Under no circumstances shall Patel Traders be held liable for any indirect, incidental, or consequential damages.\n\n10.2 STRICT CAP ON FINANCIAL CLAIMS: Our maximum financial liability shall strictly not exceed the total exact invoice value of the disputed product." },
+                { title: "11. FORCE MAJEURE", text: "11.1 ACTS OF GOD: Patel Traders shall be entirely excused from liability for any failure in fulfilling obligations due to causes beyond our control (floods, fires, strikes, lockdowns)." },
+                { title: "12. PROPRIETORSHIP & JURISDICTION", text: "12.1 NATURE OF PROPRIETORSHIP: Patel Traders operates as an unregistered, independent retail business exclusively owned by Sanjay Kumar Patel.\n\n12.2 EXCLUSIVE LEGAL JURISDICTION: The Customer unconditionally agrees that any legal actions MUST be filed EXCLUSIVELY within the competent courts located geographically within KANNAUJ, UTTAR PRADESH." }
+            ];
+
+            for(let i=0; i<pagesData.length; i++) {
+                if(i > 0) doc.addPage();
+                addHeader(pagesData[i].title);
+                doc.setFont("helvetica", "normal"); doc.setFontSize(12); doc.setTextColor(40, 40, 40);
+                const lines = doc.splitTextToSize(pagesData[i].text, maxWidth);
+                let yPos = 62; // Adjusted start position to give space below header line
+                lines.forEach(line => { doc.text(line, margin, yPos); yPos += 8; });
+                doc.setFont("helvetica", "italic"); doc.setFontSize(10); doc.setTextColor(200, 200, 200);
+                doc.text("CONFIDENTIAL & BINDING CONTRACT - PATEL TRADERS", pageWidth/2, 270, { align: "center" });
+                addFooter();
+            }
+
+            resolve(doc.output('datauristring'));
+        });
+    }
+</script>
+</body>
+</html>
